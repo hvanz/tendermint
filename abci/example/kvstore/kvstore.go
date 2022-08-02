@@ -7,9 +7,11 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	dbm "github.com/tendermint/tm-db"
 
@@ -84,6 +86,7 @@ type Application struct {
 }
 
 func NewApplication() *Application {
+	rand.Seed(time.Now().UnixNano())
 	return &Application{
 		logger:             log.NewNopLogger(),
 		state:              loadState(dbm.NewMemDB()),
@@ -292,12 +295,13 @@ func (app *Application) PrepareProposal(_ context.Context, req *types.RequestPre
 }
 
 func (*Application) ProcessProposal(_ context.Context, req *types.RequestProcessProposal) (*types.ResponseProcessProposal, error) {
-	for _, tx := range req.Txs {
-		if len(tx) == 0 || isPrepareTx(tx) {
-			return &types.ResponseProcessProposal{Status: types.ResponseProcessProposal_REJECT}, nil
-		}
+	var status types.ResponseProcessProposal_ProposalStatus
+	if rand.Intn(10) == 0 {
+		status = types.ResponseProcessProposal_REJECT
+	} else {
+		status = types.ResponseProcessProposal_ACCEPT
 	}
-	return &types.ResponseProcessProposal{Status: types.ResponseProcessProposal_ACCEPT}, nil
+	return &types.ResponseProcessProposal{Status: status}, nil
 }
 
 //---------------------------------------------
